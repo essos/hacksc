@@ -44,8 +44,6 @@ class HostController < ApplicationController
         recommedation_list = [];
         queued = [];
         @songs.each do |song|
-            puts "comming above line";
-            puts song;
             songs_list.append({:name => song.song_name,
                                :song_id => song.song_id,
                                :likes => song.likes,
@@ -74,7 +72,6 @@ class HostController < ApplicationController
             @result["message"] = "event_id and host_id not mataching";
         else
             @song = @event.first.songs.where(:song_id => @song_id);
-            puts @song;
             if @song.blank?
                 @result["error_code"] = "CrapRightNow";
                 @result["message"] = "No songs for this";
