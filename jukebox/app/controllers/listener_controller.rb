@@ -73,4 +73,46 @@ class ListenerController < ApplicationController
         end
         render :json => @result;
     end
+    
+    def get_recommendations
+        @event_id = params[:event_id];
+        # Try
+        @event = Event.find_by_event_id(:event_id => @event_id);
+        @result = {};
+        if @event.empty?
+            @result["error_code"] = "CrapRightNow";
+            @result["message"] = "event_id and host_id not mataching";
+        else
+            @songs = @event.songs;
+            recommendation_list = [];
+            @songs.each do |song|
+                if (not song.queued)&& song.rating > 0
+                    recommendation_list.append(song.song_id);
+                end
+            end
+            @result =  {"recommendation_list" => recommendation_list};
+        end
+        render :json => @result;
+    end
+
+    def get_queued
+        @event_id = params[:event_id];
+        # Try
+        @event = Event.find_by_event_id(:event_id => @event_id);
+        @result = {};
+        if @event.empty?
+            @result["error_code"] = "CrapRightNow";
+            @result["message"] = "event_id and host_id not mataching";
+        else
+            @songs = @event.songs;
+            queued_list = [];
+            @songs.each do |song|
+                if song.queued
+                    queued_list.append(song.song_id);
+                end
+            end
+            @result =  {"queued_list" => recommendation_list};
+        end
+        render :json => @result;
+    end
 end
