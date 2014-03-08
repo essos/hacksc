@@ -4,8 +4,8 @@ class ListenerController < ApplicationController
     def get_event
         @event_id = params[:event_id];
         # Try
-        @event = Event.find_by(:event_id => @event_id);
-        @songs = Song.where(:event_id => @event.id);
+        @event = Event.find_by_event_id(@event_id);
+        @songs = @event.songs;
         result_hash = { :name => @event.name,
                         :desc => @event.description,
                         :location => @event.location,
@@ -14,14 +14,14 @@ class ListenerController < ApplicationController
         recommedation_list = [];
         queued = [];
         @songs.each do |song|
-            songs_list.append({name => song.name,
-                               song_id => song.song_id,
-                               likes => song.likes,
-                               rating => song.rating});
+            songs_list.append({:name => song.song_name,
+                               :song_id => song.song_id,
+                               :likes => song.likes,
+                               :rating => song.rating});
             if song.queued
-                queued.append(song_id);
-            elsif song.rating > 0
-                recommedation_list.append(song_id);
+                queued.append(song.song_id);
+            elsif song.rating.to_i > 0
+                recommedation_list.append(song.song_id);
             end
         end
         result_hash["songs"] = songs_list;
@@ -32,16 +32,23 @@ class ListenerController < ApplicationController
     def recommend_song
         @song_id = params[:song_id];
         @event_id = params[:event_id];
-        @event = Event.where(:event_id => @event_id);
+        @event = Event.where(:event_id => @event_id).first;
         @result = {};
-        if @event.empty?
+        if @event.blank?
             @result["error_code"] = "CrapRightNow";
             @result["message"] = "event_id is not valid";
         else
-            @song = Song.where(:song_id => @song_id,
-                               :event_id => @event_id);
-            @song.rating += 1;
-            @result["success"] = ":-)";
+            @song = @event.songs.where(:song_id => @song_id).first;
+            if @song.blank?
+                @result["error_code"] = "CrapRightNow";
+                @result["message"] = "No song buddy";
+            elsif @song.queued
+                @result["error_code"] = "CrapRightNow";
+                @result["message"] = "Cant recommend a queued song";
+            else
+                @song.update_attributes(:rating => @song.rating+1);
+                @result["success"] = ":-)";
+            end
         end
         render :json => @result;
     end
@@ -49,16 +56,20 @@ class ListenerController < ApplicationController
     def like_song
         @song_id = params[:song_id];
         @event_id = params[:event_id];
-        @event = Event.where(:event_id => @event_id);
+        @event = Event.where(:event_id => @event_id).first;
         @result = {};
-        if @event.empty?
+        if @event.blank?
             @result["error_code"] = "CrapRightNow";
             @result["message"] = "event_id is not valid";
         else
-            @song = Song.where(:song_id => @song_id,
-                               :event_id => @event_id);
-            @song.likes += 1;
-            @result["success"] = ":-)";
+            @song = @event.songs.where(:song_id => @song_id).first;
+            if @song.blank?
+                @result["error_code"] = "CrapRightNow";
+                @result["message"] = "No song buddy";
+            else
+                @song.update_attributes(:likes => @song.likes+1);
+                @result["success"] = ":-)";
+            end
         end
         render :json => @result;
     end

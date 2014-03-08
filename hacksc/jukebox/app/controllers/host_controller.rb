@@ -35,7 +35,7 @@ class HostController < ApplicationController
         @event_id = params[:event_id];
         # Try
         @event = Event.find_by_event_id(@event_id);
-        @songs = Song.where(:event_id => @event.id);
+        @songs = @event.songs;
         result_hash = { :name => @event.name,
                         :desc => @event.description,
                         :location => @event.location,
@@ -100,7 +100,7 @@ class HostController < ApplicationController
             @songs = @event.first.songs;
             recommendation_list = [];
             @songs.each do |song|
-                if not song.queued && song.rating > 0
+                if (not song.queued)&& song.rating > 0
                     recommendation_list.append(song.song_id);
                 end
             end
