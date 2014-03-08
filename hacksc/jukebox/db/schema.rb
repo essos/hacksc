@@ -29,9 +29,9 @@ ActiveRecord::Schema.define(:version => 20140308074242) do
     t.integer  "likes"
     t.string   "song_name"
     t.integer  "event_id"
-    t.datetime "created_at",                   :null => false
-    t.datetime "updated_at",                   :null => false
-    t.boolean  "queued",     :default => true
+    t.datetime "created_at",                    :null => false
+    t.datetime "updated_at",                    :null => false
+    t.boolean  "queued",     :default => false
   end
 
   add_index "songs", ["event_id"], :name => "index_songs_on_event_id"
