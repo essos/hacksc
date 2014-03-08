@@ -15,14 +15,13 @@ $().ready(function() {
 	});
 	homePage.find(".btn").click(function() {
 		if ($(this).attr('id') == 'host-btn') {
-			$("#main-content").empty().append(createForm);
+			setState(STATE.CREATEFORM);
 		} else {
-			$("#main-content").empty().append(joinForm);
+			setState(STATE.JOINFORM);
 		}
 		
 		return false;
 	});
-	var html = homePage.outerHTML
 
 	var createForm = $();
 	$.each($.parseHTML('\
@@ -50,21 +49,31 @@ $().ready(function() {
 		createForm = createForm.add(node);
 	});
 	createForm.find(".btn").click(function() {
-		if ($(this).id == 'create-submit') {
+		if ($(this).attr('id') == 'create-submit') {
 			alert("Create Event!!!");
 		} else {
-			$("#main-content").empty().append(homePage);
+			setState(STATE.HOME);
 		}
 		
 		return false;
 	});
 
 	var joinForm = $();
-	$.each($.parseHTML('<h1 class="cover-heading">Join an Event</h1><p class="lead">Just enter the event ID and join it!!!</p><form role="form"><div class="form-group"><label>Event ID</label><input type="text" class="form-control" id="event_name" placeholder="Enter ID"></div><button type="button" class="btn btn-default" id="join-submit">Submit</button><button type="button" class="btn btn-default" id="join-cancel">Cancel</button></form>'
+	$.each($.parseHTML('\
+		<h1 class="cover-heading">Join an Event</h1>\
+		<p class="lead">Just enter the event ID and join it!!!</p>\
+		<form role="form">\
+			<div class="form-group">\
+				<label>Event ID</label>\
+				<input type="text" class="form-control" id="event_name" placeholder="Enter ID">\
+			</div>\
+			<button type="button" class="btn btn-default" id="join-submit">Submit</button>\
+			<button type="button" class="btn btn-default" id="join-cancel">Cancel</button>\
+		</form>'
 	), function(index, node) {
 		joinForm = joinForm.add(node);
 	});
-	homePage.find(".btn").click(function() {
+	joinForm.find(".btn").click(function() {
 		if ($(this).attr('id') == 'join-submit') {
 			alert("Join Event!!!");
 		} else {
@@ -75,23 +84,24 @@ $().ready(function() {
 	});
 
 	var STATE = {
-		HOME : homePage,
-		CREATEFORM : createForm,
-		JOINFORM : joinForm
+		HOME : 'homePage',
+		CREATEFORM : 'createForm',
+		JOINFORM : 'joinForm'
 	}
 
 	function updateState() {
 		var state = $.cookies.get('ui_state');
+		$("#main-content").children().detach()
 		if (state == null) {
 			$.cookies.set('ui_state', STATE.HOME);
-			$("#main-content").empty().append(STATE.HOME);
+			$("#main-content").append(eval(STATE.HOME));
 		} else {
-			$("#main-content").empty().append(state);
+			$("#main-content").append(eval(state));
 		}
 	}
 
 	function setState(newState) {
-		$.cookies.set('ui_state', state);
+		$.cookies.set('ui_state', newState);
 		updateState();
 	}
 
