@@ -2,6 +2,34 @@
 
 $().ready(function() {
 
+	/*
+	 * Define all request senders...
+	 */
+
+	function sendJoinRequest() {
+		$.ajax({
+			url: 'getevent?event_id=' + $('#event_id').val()
+		}).done(function(theEvent) {
+			//TODO: Add event details header...
+			//populate current queue...
+			$.each(theEvent, function(idx, songID) {	
+				listenerPage
+					.find('#current-queue')
+					.append(
+						'<li class="als-item">' +
+						$.grep(
+							theEvent.songs,
+							function(song) {
+								return song.id == songID;
+							}) +
+						'</li>'
+					);
+			});
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			alert(textStatus);
+		});
+	}
+
 	var homePage = $();
 	$.each($.parseHTML('\
 		<h1 class="cover-heading">Cover your page.</h1>\
@@ -52,7 +80,7 @@ $().ready(function() {
 		if ($(this).attr('id') == 'create-submit') {
 			alert("Create Event!!!");
 		} else {
-			setState(STATE.HOME);
+			setState(STATE.HOMEPAGE);
 		}
 		
 		return false;
@@ -65,7 +93,7 @@ $().ready(function() {
 		<form role="form">\
 			<div class="form-group">\
 				<label>Event ID</label>\
-				<input type="text" class="form-control" id="event_name" placeholder="Enter ID">\
+				<input type="text" class="form-control" id="event_id" placeholder="Enter ID">\
 			</div>\
 			<button type="button" class="btn btn-default" id="join-submit">Submit</button>\
 			<button type="button" class="btn btn-default" id="join-cancel">Cancel</button>\
@@ -75,26 +103,60 @@ $().ready(function() {
 	});
 	joinForm.find(".btn").click(function() {
 		if ($(this).attr('id') == 'join-submit') {
-			alert("Join Event!!!");
+			setState(STATE.LISTENERPAGE);
 		} else {
-			setState(STATE.HOME);
+			setState(STATE.HOMEPAGE);
 		}
 		
 		return false;
 	});
 
+	var listenerPage = $();
+	$.each($.parseHTML('\
+		<div class="als-container" id="current-queue-container">\
+			<span class="als-prev"><img src="images/prev.png" alt="prev" title="previous" /></span>\
+			<div class="als-viewport">\
+				<ul class="als-wrapper" id="current-queue">\
+				</ul>\
+			</div>\
+			<span class="als-next"><img src="images/next.png" alt="next" title="next" /></span>\
+		</div>'
+	), function(index, node) {
+		listenerPage = joinForm.add(node);
+	});
+	listenerPage.find("#current-queue-container").als();
+
 	var STATE = {
-		HOME : 'homePage',
+		HOMEPAGE : 'homePage',
 		CREATEFORM : 'createForm',
-		JOINFORM : 'joinForm'
+		JOINFORM : 'joinForm',
+		LISTENERPAGE : 'listenerPage'
+	}
+
+	function UpdateData(newState) {
+		switch (newState) {
+			case STATE.HOMEPAGE:
+				setState(newState);
+				break;
+			case STATE.CREATEFORM:l
+				setState(newState);
+				break;
+			case STATE.JOINFORM:
+				setState(newState);
+				break;
+			case STATE.LISTENERPAGE:
+				SendJoinRequest();
+				break;
+			default: break;
+		}
 	}
 
 	function updateState() {
 		var state = $.cookies.get('ui_state');
 		$("#main-content").children().detach()
 		if (state == null) {
-			$.cookies.set('ui_state', STATE.HOME);
-			$("#main-content").append(eval(STATE.HOME));
+			$.cookies.set('ui_state', STATE.HOMEPAGE);
+			$("#main-content").append(eval(STATE.HOMEPAGE));
 		} else {
 			$("#main-content").append(eval(state));
 		}
@@ -103,6 +165,10 @@ $().ready(function() {
 	function setState(newState) {
 		$.cookies.set('ui_state', newState);
 		updateState();
+	}
+
+	function shiftState(newState) {
+		UpdateData(newState);
 	}
 
 	//set initial state...
