@@ -83,10 +83,11 @@ class HostController < ApplicationController
         render :json => @result;
     end
 
-    def get_recommendations
+    def add_to_played
+        # This is a misnomer currently all it does is removes from queue
         @event_id = params[:event_id];
         @host_id = params[:host_id];
-        # Try
+        @song_id = params[:song_id];
         @event = Event.where(:event_id => @event_id,
                              :host_id => @host_id);
         @result = {};
@@ -94,7 +95,28 @@ class HostController < ApplicationController
             @result["error_code"] = "CrapRightNow";
             @result["message"] = "event_id and host_id not mataching";
         else
-            @songs = @event.first.songs;
+            @song = @event.first.songs.where(:song_id => @song_id);
+            if @song.blank?
+                @result["error_code"] = "CrapRightNow";
+                @result["message"] = "No songs for this";
+            else
+               @song.first.update_attributes(:queued => false); 
+               @result["success"] = ":-)";
+            end
+        end
+        render :json => @result;
+    end
+
+    def get_recommendations
+        @event_id = params[:event_id];
+        # Try
+        @event = Event.find_by_event_id(:event_id => @event_id);
+        @result = {};
+        if @event.empty?
+            @result["error_code"] = "CrapRightNow";
+            @result["message"] = "event_id and host_id not mataching";
+        else
+            @songs = @event.songs;
             recommendation_list = [];
             @songs.each do |song|
                 if (not song.queued)&& song.rating > 0
