@@ -1,4 +1,4 @@
-class HostController < ApplicationController
+class ListenerController < ApplicationController
     def index
     end
     def get_event

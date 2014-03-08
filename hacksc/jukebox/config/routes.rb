@@ -1,4 +1,11 @@
 Jukebox::Application.routes.draw do
+  # root :to => "jukebox#index"
+  get "/host/create_event", :to=>"host#create_event"
+  get "/host/get_event", :to=>"host#create_event"
+  get "/host/add_to_queue", :to=>"host#add_to_queue"
+  get "/listener/get_event", :to=>"host#get_event"
+  get "/host/recommend_song", :to=>"host#recommend_song"
+  get "/host/like_song", :to=>"host#like_song"
   # The priority is based upon order of creation:
   # first created -> highest priority.
 
