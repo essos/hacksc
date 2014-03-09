@@ -27,6 +27,49 @@ $().ready(function() {
 		updateState();
 	}
 
+	function getRecommendedSongs(scope, callback) {
+	    url = "listner/recommend_song?event_id="+ $.cookies.get('event-id');
+	    $.ajax({ dataType:	'json',
+		     url :       url,
+		     callback: callback,
+		     context:	scope});
+	}
+	
+	function getQueuedSongs(scope, callback) {
+	    url = "listner/queued_songs?event_id="+ $.cookies.get('event-id');
+	    $.ajax({ dataType:	'json',
+		     url :       url,
+		     callback: callback,
+		     context:	scope});
+	}
+
+	function sendRecommendation(song_id) {
+	    url = "listner/recommend_song?event_id="+ $.cookies.get('event-id');
+	    url += "&song_id=" + song_id;
+	    $.ajax({ dataType:	'json',
+		     url :       url,
+		     context:	this});
+
+	}
+
+	function addToQueue(song_id) {
+	    url = "listner/recommend_song?event_id="+ $.cookies.get('event-id');
+	    url += "&song_id=" + song_id;
+	    url += "&host_id=" + host_id;
+	    $.ajax({ dataType:	'json',
+		     url :       url,
+		     context:	this});
+	}
+
+	function addToPlayed(song_id) {
+	    url = "listner/recommend_song?event_id="+ $.cookies.get('event-id');
+	    url += "&song_id=" + song_id;
+	    url += "&host_id=" + host_id;
+	    $.ajax({ dataType:	'json',
+		     url :       url,
+		     context:	this});
+	}
+
 	function shiftState(newState) {
 		switch (newState) {
 			case STATE.HOMEPAGE:
@@ -41,7 +84,11 @@ $().ready(function() {
 			case STATE.LISTENERPAGE:
 				sendJoinRequest();
 				break;
-			default: break;
+			case STATE.HOSTPAGE:
+				sendHostJoinRequest();
+				break;
+			default: 
+				setState(STATE.HOMEPAGE);
 		}
 	}
 
@@ -125,6 +172,53 @@ $().ready(function() {
 			alert(errorThrown.message);
 		});
 	}
+	
+	function sendHostJoinRequest() {
+		var url = 'http://localhost:3000/listener/get_event?event_id=' + $.cookies.get('event-id');
+		$.ajax({
+			dataType:	'json',
+			url :		url,
+			context:	this
+		}).done(function(data) {
+
+			theEvent = data;
+			updateHTML(true, true, true, true);
+			console.log(STATE);
+			setState(STATE.HOSTPAGE);
+
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			alert(errorThrown.message);
+		});
+	}
+
+	function parseSongsInsideDirectory(song_tag) {
+	    return $(song_tag)[0].files;
+	}
+
+	function sendCreateRequest() {
+	    var url = 'http://localhost:3000/host/create_event?';
+	    url += ("name=" + createForm.find("#event_name").val()) 
+	    url += ("&desc=" +  createForm.find("#event_desc").val());
+	    url += ("&location=" +  createForm.find("#event_loc").val());
+	    get_file_list = parseSongsInsideDirectory("#event_songlist");
+	    for (var index = 0; index < get_file_list.length; index+=1){
+		url += ("&song[]=" + get_file_list[index].name);
+	    }
+	    $.ajax({
+		    dataType:	'json',
+		    url :	url,
+		    context:	this
+	    }).done(function(data) {
+		    // Excepted response JSON object is 
+		    $.cookies.set('event-id', data.event_id);
+		    $.cookies.set('host-id', data.host_id);
+		    shiftState(STATE.HOSTPAGE);
+
+	    }).fail(function(jqXHR, textStatus, errorThrown) {
+		    alert(errorThrown.message);
+	    });
+
+	}
 
 	function sendRecommendSong(song) {
 		$.ajax({
@@ -177,7 +271,7 @@ $().ready(function() {
 				</div>\
 				<div class="form-group">\
 					<label>File input</label>\
-				<input type="file" id="event_songlist" multiple>\
+				<input type="file" id="event_songlist" webkitdirectory directory multiple >\
 				</div>\
 				<button type="button" class="btn btn-default" id="create-submit">Submit</button>\
 				<button type="button" class="btn btn-default" id="create-cancel">Cancel</button>\
@@ -188,7 +282,8 @@ $().ready(function() {
 	});
 	createForm.find(".btn").click(function() {
 		if ($(this).attr('id') == 'create-submit') {
-			alert("Create Event!!!");
+			//alert("oh crap");
+			sendCreateRequest();
 		} else {
 			shiftState(STATE.HOMEPAGE);
 		}
@@ -260,6 +355,8 @@ $().ready(function() {
 		theEvent = undefined;
 		shiftState(STATE.HOMEPAGE);
 	});
+
+	var hostPage = $();
 
 	//set initial state...
 	shiftState($.cookies.get('ui_state'));
