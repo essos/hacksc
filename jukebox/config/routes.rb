@@ -3,6 +3,7 @@ Jukebox::Application.routes.draw do
   post "/host/create_event", :to=>"host#create_event"
   get "/host/get_event", :to=>"host#get_event"
   get "/host/add_to_queue", :to=>"host#add_to_queue"
+  get "/host/add_to_played", :to=>"host#add_to_played"
   get "/host/get_recommendations", :to=>"host#get_recommendations"
   get "/listener/get_event", :to=>"listener#get_event"
   get "/listener/recommend_song", :to=>"listener#recommend_song"
