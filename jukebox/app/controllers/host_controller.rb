@@ -35,6 +35,13 @@ class HostController < ApplicationController
         @event_id = params[:event_id];
         # Try
         @event = Event.find_by_event_id(@event_id);
+        if @event.blank?
+            @result = {};
+            @result["error_code"] = "CrapRightNow";
+            @result["message"] = "Invalid event_id";
+            render :json => result and return
+        end
+            
         @songs = @event.songs;
         result_hash = { :name => @event.name,
                         :desc => @event.description,

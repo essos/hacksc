@@ -60,8 +60,6 @@ $().ready(function() {
 					return song.song_id == songID;
 				})[0];
 
-				console.log(song);
-
 				listenerPage
 					.find('#current-queue')
 					.append(
@@ -91,8 +89,6 @@ $().ready(function() {
 				var song = $.grep(theEvent.songs, function(song) {
 					return song.song_id == songID;
 				})[0];
-
-				console.log(song);
 
 				listenerPage
 					.find('#reco-song-list')
