@@ -101,8 +101,15 @@ $().ready(function() {
 		}
 
 		if (doDetails) {
+			var name;
+
 			//Add event details header...
-			activePage.find('#event-name').empty().append(theEvent.name);
+			if ($.cookies.get('host-id')) {
+				name = theEvent.name + '(ID: ' + $.cookies.get('event-id') + ')';
+			} else {
+				name = theEvent.name;
+			}
+			activePage.find('#event-name').empty().append(name);
 			activePage.find('#event-loc').empty().append('<span class="text-muted">at </span>' + theEvent.location);
 			activePage.find('#event-desc').empty().append(theEvent.desc);
 		}
@@ -118,7 +125,7 @@ $().ready(function() {
 				})[0];
 
 				var listHTML = '<li class="als-item"><div class="well well-sm queue-item">' + song.name;
-				if ($.cookies.get('host_id')) {
+				if ($.cookies.get('host-id')) {
 					listHTML += '<button type="button" class="btn btn-default btn-xs pull-right" id="' +
 						song.song_id +'">Already Played?</button>';
 				}
@@ -126,7 +133,7 @@ $().ready(function() {
 				activePage.find('#current-queue').append(listHTML);
 				activePage.find('#' + song.song_id).click(function() {
 					$(this).attr('disabled', 'disabled');
-					$(this).html('');
+					$(this).remove();
 					addToPlayed($(this).attr('id'));
 
 					return false;
@@ -241,17 +248,23 @@ $().ready(function() {
 
 	function sendCreateRequest() {
 	    var url = 'http://localhost:3000/host/create_event?';
-	    url += ("name=" + createForm.find("#event_name").val()) 
-	    url += ("&desc=" +  createForm.find("#event_desc").val());
-	    url += ("&location=" +  createForm.find("#event_location").val());
+		var file_list = new Array();
 	    get_file_list = parseSongsInsideDirectory("#event_songlist");
 	    for (var index = 0; index < get_file_list.length; index+=1){
-		url += ("&song_list[]=" + get_file_list[index].name);
+			file_list.push(get_file_list[index].name);
 	    }
+
 	    $.ajax({
+			type:		"POST",
 		    dataType:	'json',
-		    url :	url,
-		    context:	this
+		    url :		url,
+		    context:	this,
+			data:	{
+				name: createForm.find("#event_name").val(),
+				desc: createForm.find("#event_desc").val(),
+				location: createForm.find("#event_location").val(),
+				'song_list[]': file_list
+			}
 	    }).done(function(data) {
 		    // Excepted response JSON object is 
 		    $.cookies.set('event-id', data.event_id);
