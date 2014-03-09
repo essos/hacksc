@@ -56,9 +56,9 @@ class HostController < ApplicationController
                                :likes => song.likes,
                                :rating => song.rating});
             if song.queued
-                queued.append(song.song_id);
+                queued.append({"song_id" => song.song_id});
             elsif song.rating > 0
-                recommedation_list.append(song.song_id);
+                recommedation_list.append({"song_id" => song.song_id});
             end
         end
         result_hash["songs"] = songs_list;
@@ -127,7 +127,7 @@ class HostController < ApplicationController
             recommendation_list = [];
             @songs.each do |song|
                 if (not song.queued)&& song.rating > 0
-                    recommendation_list.append(song.song_id);
+                    recommendation_list.append({"song_id" => song.song_id});
                 end
             end
             @result =  {"recommendation_list" => recommendation_list};
