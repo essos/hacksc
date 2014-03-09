@@ -28,7 +28,7 @@ $().ready(function() {
 	}
 
 	function getRecommendedSongs(scope, callback) {
-	    url = "listner/recommend_song?event_id="+ $.cookies.get('event-id');
+	    url = "listener/recommend_song?event_id="+ $.cookies.get('event-id');
 	    $.ajax({ dataType:	'json',
 		     url :       url,
 		     callback: callback,
@@ -36,7 +36,7 @@ $().ready(function() {
 	}
 	
 	function getQueuedSongs(scope, callback) {
-	    url = "listner/queued_songs?event_id="+ $.cookies.get('event-id');
+	    url = "listener/queued_songs?event_id="+ $.cookies.get('event-id');
 	    $.ajax({ dataType:	'json',
 		     url :       url,
 		     callback: callback,
@@ -44,7 +44,7 @@ $().ready(function() {
 	}
 
 	function sendRecommendation(song_id) {
-	    url = "listner/recommend_song?event_id="+ $.cookies.get('event-id');
+	    url = "listener/recommend_song?event_id="+ $.cookies.get('event-id');
 	    url += "&song_id=" + song_id;
 	    $.ajax({ dataType:	'json',
 		     url :       url,
@@ -53,18 +53,18 @@ $().ready(function() {
 	}
 
 	function addToQueue(song_id) {
-	    url = "listner/recommend_song?event_id="+ $.cookies.get('event-id');
+	    url = "host/add_to_queue?event_id="+ $.cookies.get('event-id');
 	    url += "&song_id=" + song_id;
-	    url += "&host_id=" + host_id;
+	    url += "&host_id=" + $.cookies.get('host-id');
 	    $.ajax({ dataType:	'json',
 		     url :       url,
 		     context:	this});
 	}
 
 	function addToPlayed(song_id) {
-	    url = "listner/recommend_song?event_id="+ $.cookies.get('event-id');
+	    url = "host/add_to_played?event_id="+ $.cookies.get('event-id');
 	    url += "&song_id=" + song_id;
-	    url += "&host_id=" + host_id;
+	    url += "&host_id=" + $.cookies.get('host-id');
 	    $.ajax({ dataType:	'json',
 		     url :       url,
 		     context:	this});
@@ -82,10 +82,10 @@ $().ready(function() {
 				setState(newState);
 				break;
 			case STATE.LISTENERPAGE:
-				sendJoinRequest();
+				sendGetEventRequest(newState);
 				break;
 			case STATE.HOSTPAGE:
-				sendHostJoinRequest();
+				sendGetEventRequest(newState);
 				break;
 			default: 
 				setState(STATE.HOMEPAGE);
@@ -93,69 +93,106 @@ $().ready(function() {
 	}
 
 	function updateHTML(doDetails, doQueue, doSongs, doReco) {
-		if (doDetails) {
-			//Add event details header...
-			listenerPage.find('#event-name').empty().append(theEvent.name);
-			listenerPage.find('#event-loc:last-child').remove()
-			listenerPage.find('#event-loc').append(theEvent.location);
-			listenerPage.find('#event-desc').empty().append(theEvent.desc);
+		var activePage;
+		if ($.cookies.get('host-id')) {
+			activePage = hostPage;
+		} else {
+			activePage = listenerPage;
 		}
 
+		if (doDetails) {
+			//Add event details header...
+			activePage.find('#event-name').empty().append(theEvent.name);
+			activePage.find('#event-loc').empty().append('<span class="text-muted">at </span>' + theEvent.location);
+			activePage.find('#event-desc').empty().append(theEvent.desc);
+		}
+		
+		queued = {};
 		if (doQueue) {
 			//populate current queue...
-			listenerPage.find('#current-queue').empty();
-			$.each(theEvent.queued, function(idx, songID) {	
+			activePage.find('#current-queue').empty();
+			$.each(theEvent.queued, function(idx, songID) {
+				queued[songID.song_id] = true;
 				var song = $.grep(theEvent.songs, function(song) {
-					return song.song_id == songID;
+					return song.song_id == songID.song_id;
 				})[0];
 
-				if (
-				listenerPage
-					.find('#current-queue')
-					.append(
-						'<li class="als-item"><div class="well well-sm queue-item">' +
-						song.name +
-						'</div></li>'
-					);
+				var listHTML = '<li class="als-item"><div class="well well-sm queue-item">' + song.name;
+				if ($.cookies.get('host_id')) {
+					listHTML += '<button type="button" class="btn btn-default btn-xs pull-right" id="' +
+						song.song_id +'">Already Played?</button>';
+				}
+				listHTML += '</div></li>';
+				activePage.find('#current-queue').append(listHTML);
+				activePage.find('#' + song.song_id).click(function() {
+					$(this).attr('disabled', 'disabled');
+					$(this).html('');
+					addToPlayed($(this).attr('id'));
+
+					return false;
+				});
+			});
+		}
+
+		recommended = {};
+		if (doReco) {
+			//Add recommendation list...
+			activePage.find('#reco-song-list').empty();
+			$.each(theEvent.recommendation_list, function(idx, songID) {
+				recommended[songID.song_id] = 1;
+				var song = $.grep(theEvent.songs, function(song) {
+					return song.song_id == songID.song_id;
+				})[0];
+
+				var listHTML = '<li class="list-group-item">' + song.name + '<span class="badge">' + song.rating + '</span>';
+				if ($.cookies.get('host_id')) {
+					listHTML += '<button type="button" class="btn btn-default btn-xs pull-right" id="' +
+						song.song_id +'">queue</button>';
+				}
+				listHTML += '</li>';
+			activePage
+				.find('#reco-song-list')
+					.append(listHTML);
+				activePage.find('#' + song.song_id).click(function() {
+					$(this).attr('disabled', 'disabled');
+					$(this).html('queued');
+					addToQueue($(this).attr('id'));
+
+					return false;
+				});
+					
 			});
 		}
 
 		if (doSongs) {
 			//Add song list...
-			listenerPage.find('#song-list li:not(:first)').empty();
-			$.each(theEvent.songs, function(idx, song) {
-				listenerPage
-					.find('#song-list')
-					.append(
-						'<li class="list-group-item">' +
-						song.name +
-					   	'<button type="button" class="btn btn-default btn-xs pull-right id="' +
-					   	song.song_id +
-					   	'"">recommend</button>' +
-						'</li>'
-					);
-				listenerPage.find('button').click(function() {
-					$(this).attr('disabled', 'disabled');
-					$(this).html('recommended');
-					sendRecommendation($(this).attr('id');
-				});
-			});
-		}
+			activePage.find('#song-list li:not(:first)').remove();
+			$.each(theEvent.songs, function(dx, song) {
+				if ((recommended[song.song_id] == undefined) && (queued[song.song_id] == undefined)) {
+					var buttonHTML;
+					if ($.cookies.get('host-id')) {
+						buttonHTML = '<button type="button" class="btn btn-default btn-xs pull-right" id="' +
+							song.song_id +'">queue</button>';
+					} else {
+						buttonHTML = '<button type="button" class="btn btn-default btn-xs pull-right" id="' +
+							song.song_id +'">recommend</button>';
+					}
+						
+					var listHTML = '<li class="list-group-item song-list-item">' +	song.name + buttonHTML + '</li>'
+					activePage.find('#song-list').append(listHTML);
+					activePage.find('#' + song.song_id).click(function() {
+						$(this).attr('disabled', 'disabled');
+						if ($(this).html() == 'recommend') {
+							$(this).html('recommended');
+							sendRecommendation($(this).attr('id'));
+						} else {
+							$(this).html('queued');
+							addToQueue($(this).attr('id'));
+						}
 
-		if (doReco) {
-			//Add recommendation list...
-			listenerPage.find('#reco-song-list').empty();
-			$.each(theEvent.recommendation_list, function(idx, songID) {
-				var song = $.grep(theEvent.songs, function(song) {
-					return song.song_id == songID;
-				})[0];
-
-				listenerPage
-					.find('#reco-song-list')
-					.append(
-						'<li class="list-group-item">' + song.name + '</li>' +
-						'<span class="badge">' + song.rating + '</span>'
-					);
+						return false;
+					});
+				}
 			});
 		}
 	}
@@ -164,7 +201,7 @@ $().ready(function() {
 	 * Define all request senders...
 	 */
 
-	function sendJoinRequest() {
+	function sendGetEventRequest(newState) {
 		var url = 'http://localhost:3000/listener/get_event?event_id=' + $.cookies.get('event-id');
 		$.ajax({
 			dataType:	'json',
@@ -173,17 +210,15 @@ $().ready(function() {
 		}).done(function(data) {
 
 			theEvent = data;
-			console.log("Testing");
 			updateHTML(true, true, true, true);
-			console.log(STATE);
-			setState(STATE.LISTENERPAGE);
+			setState(newState);
 
 		}).fail(function(jqXHR, textStatus, errorThrown) {
-			alert(errorThrown.message);
+			alert(errorThrown);
 		});
 	}
 	
-	function sendHostJoinRequest() {
+	/*function sendHostJoinRequest() {
 		var url = 'http://localhost:3000/listener/get_event?event_id=' + $.cookies.get('event-id');
 		$.ajax({
 			dataType:	'json',
@@ -193,13 +228,12 @@ $().ready(function() {
 
 			theEvent = data;
 			updateHTML(true, true, true, true);
-			console.log(STATE);
 			setState(STATE.HOSTPAGE);
 
 		}).fail(function(jqXHR, textStatus, errorThrown) {
 			alert(errorThrown.message);
 		});
-	}
+	}*/
 
 	function parseSongsInsideDirectory(song_tag) {
 	    return $(song_tag)[0].files;
@@ -209,10 +243,10 @@ $().ready(function() {
 	    var url = 'http://localhost:3000/host/create_event?';
 	    url += ("name=" + createForm.find("#event_name").val()) 
 	    url += ("&desc=" +  createForm.find("#event_desc").val());
-	    url += ("&location=" +  createForm.find("#event_loc").val());
+	    url += ("&location=" +  createForm.find("#event_location").val());
 	    get_file_list = parseSongsInsideDirectory("#event_songlist");
 	    for (var index = 0; index < get_file_list.length; index+=1){
-		url += ("&song[]=" + get_file_list[index].name);
+		url += ("&song_list[]=" + get_file_list[index].name);
 	    }
 	    $.ajax({
 		    dataType:	'json',
@@ -225,7 +259,7 @@ $().ready(function() {
 		    shiftState(STATE.HOSTPAGE);
 
 	    }).fail(function(jqXHR, textStatus, errorThrown) {
-		    alert(errorThrown.message);
+		    alert(errorThrown);
 	    });
 
 	}
@@ -240,7 +274,7 @@ $().ready(function() {
 			setState(STATE.LISTENERPAGE);
 
 		}).fail(function(jqXHR, textStatus, errorThrown) {
-			alert(errorThrown.message);
+			alert(errorThrown);
 		});
 	}
 
@@ -283,7 +317,7 @@ $().ready(function() {
 					<label>File input</label>\
 				<input type="file" id="event_songlist" webkitdirectory directory multiple >\
 				</div>\
-				<button type="button" class="btn btn-default" id="create-submit">Submit</button>\
+				<button type="button" class="btn btn-default" id="create-submit">Create</button>\
 				<button type="button" class="btn btn-default" id="create-cancel">Cancel</button>\
 			</form>\
 		</div>'
@@ -310,7 +344,7 @@ $().ready(function() {
 				<label>Event ID</label>\
 				<input type="text" class="form-control" id="event-id" placeholder="Enter ID">\
 			</div>\
-			<button type="button" class="btn btn-default" id="join-submit">Submit</button>\
+			<button type="button" class="btn btn-default" id="join-submit">Join</button>\
 			<button type="button" class="btn btn-default" id="join-cancel">Cancel</button>\
 		</form>'
 	), function(index, node) {
@@ -332,7 +366,7 @@ $().ready(function() {
 		<div class="content-head row"> \
 			<div class="col-md-11">\
 				<h1 id="event-name"></h1>\
-				<h3 id="event-loc"><span class="text-muted">at </span></h3>\
+				<h3 id="event-loc"></h3>\
 				<p id="event-desc"></p>\
 			</div>\
 			<div class="col-md-1">\
@@ -356,7 +390,7 @@ $().ready(function() {
 				</ul>\
 			</div>\
 			<div class="col-md-6">\
-				<ul class="list-group">\
+				<ul class="list-group" id="reco-song-list">\
 				</ul>\
 			</div>\
 		</div>'
@@ -375,11 +409,11 @@ $().ready(function() {
 		<div class="content-head row"> \
 			<div class="col-md-11">\
 				<h1 id="event-name"></h1>\
-				<h3 id="event-loc"><span class="text-muted">at </span></h3>\
+				<h3 id="event-loc"></h3>\
 				<p id="event-desc"></p>\
 			</div>\
 			<div class="col-md-1">\
-				<button type="button" class="btn btn-default pull-right" id="close-event">Leave</button>\
+				<button type="button" class="btn btn-default pull-right" id="close-event">Close</button>\
 			</div>\
 		</div>\
 		<div class="als-container" id="current-queue-container">\
@@ -399,20 +433,31 @@ $().ready(function() {
 				</ul>\
 			</div>\
 			<div class="col-md-6">\
-				<ul class="list-group">\
+				<ul class="list-group" id="reco-song-list">\
 				</ul>\
 			</div>\
 		</div>'
 	), function(index, node) {
-		listenerPage = listenerPage.add(node);
+		hostPage = hostPage.add(node);
 	});
-	listenerPage.find('#current-queue-container').als();
-	listenerPage.find('#leave-event').click(function() {
+	hostPage.find('#current-queue-container').als();
+	hostPage.find('#close-event').click(function() {
 		//remove song list...
 		theEvent = undefined;
+		$.cookies.set('host-id', null);
 		shiftState(STATE.HOMEPAGE);
 	});
 
 	//set initial state...
 	shiftState($.cookies.get('ui_state'));
+
+	//start refres timer...
+	setTimeout(function() {
+		var state = $.cookies.get('ui_state');
+		if ($.cookies.get('event-id') && (state == STATE.HOSTPAGE || state == STATE.LISTENERPAGE)) {
+			sendGetEventRequest(state);
+		}
+
+		setTimeout(arguments.callee, 5000);
+	}, 5000);
 });
