@@ -49,7 +49,8 @@ $().ready(function() {
 		if (doDetails) {
 			//Add event details header...
 			listenerPage.find('#event-name').empty().append(theEvent.name);
-			listenerPage.find('#event-loc').empty().append(theEvent.location);
+			listenerPage.find('#event-loc:last-child').remove()
+			listenerPage.find('#event-loc').append(theEvent.location);
 			listenerPage.find('#event-desc').empty().append(theEvent.desc);
 		}
 
@@ -64,9 +65,9 @@ $().ready(function() {
 				listenerPage
 					.find('#current-queue')
 					.append(
-						'<li class="als-item">' +
+						'<li class="als-item"><div class="well well-sm queue-item">' +
 						song.name +
-						'</li>'
+						'</div></li>'
 					);
 			});
 		}
@@ -78,10 +79,15 @@ $().ready(function() {
 				listenerPage
 					.find('#song-list')
 					.append(
-						'<li class="list-group-item">' +
+						'<li class="list-group-item" id="' + song.song_id + '">' +
 						song.name +
+					   	'<button type="button" class="btn btn-default btn-xs pull-right">recommend</button>' +
 						'</li>'
 					);
+				listenerPage.find('button').click(function() {
+					$(this).attr('disabled', 'disabled');
+					$(this).html('recommended');
+				});
 			});
 		}
 
@@ -225,10 +231,14 @@ $().ready(function() {
 	var listenerPage = $();
 	$.each($.parseHTML('\
 		<div class="content-head row"> \
-			<h1 id="event-name"></h1>\
-			<h3 id="event-loc"><span class="text-muted">at </span></h3>\
-			<p id="event-desc"></p>\
-			<button type="button" class="btn btn-default pull-right" id="leave-event">Leave</button>\
+			<div class="col-md-11">\
+				<h1 id="event-name"></h1>\
+				<h3 id="event-loc"><span class="text-muted">at </span></h3>\
+				<p id="event-desc"></p>\
+			</div>\
+			<div class="col-md-1">\
+				<button type="button" class="btn btn-default pull-right" id="leave-event">Leave</button>\
+			</div>\
 		</div>\
 		<div class="als-container" id="current-queue-container">\
 			<span class="als-prev glyphicon glyphicon-chevron-left"></span>\
@@ -236,7 +246,7 @@ $().ready(function() {
 				<ul class="als-wrapper" id="current-queue">\
 				</ul>\
 			</div>\
-			<span class="als-prev glyphicon glyphicon-chevron-right"></span>\
+			<span class="als-next glyphicon glyphicon-chevron-right"></span>\
 		</div>\
 		<div class="row">\
 			<div class="col-md-6">\
@@ -260,6 +270,50 @@ $().ready(function() {
 		theEvent = undefined;
 		shiftState(STATE.HOMEPAGE);
 	});
+
+	var hostPage = $();
+	$.each($.parseHTML('\
+		<div class="content-head row"> \
+			<div class="col-md-11">\
+				<h1 id="event-name"></h1>\
+				<h3 id="event-loc"><span class="text-muted">at </span></h3>\
+				<p id="event-desc"></p>\
+			</div>\
+			<div class="col-md-1">\
+				<button type="button" class="btn btn-default pull-right" id="close-event">Leave</button>\
+			</div>\
+		</div>\
+		<div class="als-container" id="current-queue-container">\
+			<span class="als-prev glyphicon glyphicon-chevron-left"></span>\
+			<div class="als-viewport">\
+				<ul class="als-wrapper" id="current-queue">\
+				</ul>\
+			</div>\
+			<span class="als-next glyphicon glyphicon-chevron-right"></span>\
+		</div>\
+		<div class="row">\
+			<div class="col-md-6">\
+				<ul class="list-group" id="song-list">\
+					<li class="list-group-item">\
+						<input type="text" class="form-control" placeholder="Search" name="srch-term" id="srch-term">\
+					</li>\
+				</ul>\
+			</div>\
+			<div class="col-md-6">\
+				<ul class="list-group">\
+				</ul>\
+			</div>\
+		</div>'
+	), function(index, node) {
+		listenerPage = listenerPage.add(node);
+	});
+	listenerPage.find('#current-queue-container').als();
+	listenerPage.find('#leave-event').click(function() {
+		//remove song list...
+		theEvent = undefined;
+		shiftState(STATE.HOMEPAGE);
+	});
+
 
 	//set initial state...
 	shiftState($.cookies.get('ui_state'));
