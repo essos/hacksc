@@ -1,6 +1,6 @@
 Jukebox::Application.routes.draw do
   # root :to => "jukebox#index"
-  get "/host/create_event", :to=>"host#create_event"
+  post "/host/create_event", :to=>"host#create_event"
   get "/host/get_event", :to=>"host#get_event"
   get "/host/add_to_queue", :to=>"host#add_to_queue"
   get "/host/get_recommendations", :to=>"host#get_recommendations"
