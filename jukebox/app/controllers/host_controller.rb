@@ -55,7 +55,7 @@ class HostController < ApplicationController
             end
         end
         result_hash["songs"] = songs_list;
-        result_hash["recommedation_list"] = recommedation_list;
+        result_hash["recommendation_list"] = recommedation_list;
         result_hash["queued"] = queued;
         render :json => result_hash
     end
