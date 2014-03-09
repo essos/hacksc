@@ -32,7 +32,7 @@ $().ready(function() {
 			case STATE.HOMEPAGE:
 				setState(newState);
 				break;
-			case STATE.CREATEFORM:l
+			case STATE.CREATEFORM:
 				setState(newState);
 				break;
 			case STATE.JOINFORM:
@@ -48,13 +48,14 @@ $().ready(function() {
 	function updateHTML(doDetails, doQueue, doSongs, doReco) {
 		if (doDetails) {
 			//Add event details header...
-			listenerPage.find('#event-name').append(theEvent.name);
-			listenerPage.find('#event-loc').append(theEvent.location);
-			listenerPage.find('#event-desc').append(theEvent.desc);
+			listenerPage.find('#event-name').empty().append(theEvent.name);
+			listenerPage.find('#event-loc').empty().append(theEvent.location);
+			listenerPage.find('#event-desc').empty().append(theEvent.desc);
 		}
 
 		if (doQueue) {
 			//populate current queue...
+			listenerPage.find('#current-queue').empty();
 			$.each(theEvent.queued, function(idx, songID) {	
 				var song = $.grep(theEvent.songs, function(song) {
 					return song.song_id == songID;
@@ -72,6 +73,7 @@ $().ready(function() {
 
 		if (doSongs) {
 			//Add song list...
+			listenerPage.find('#song-list li:not(:first)').empty();
 			$.each(theEvent.songs, function(idx, song) {
 				listenerPage
 					.find('#song-list')
@@ -85,6 +87,7 @@ $().ready(function() {
 
 		if (doReco) {
 			//Add recommendation list...
+			listenerPage.find('#reco-song-list').empty();
 			$.each(theEvent.recommendation_list, function(idx, songID) {
 				var song = $.grep(theEvent.songs, function(song) {
 					return song.song_id == songID;
@@ -105,13 +108,7 @@ $().ready(function() {
 	 */
 
 	function sendJoinRequest() {
-		if (!$('#event-id').val()) {
-			//TODO: error handling...
-			alert("Please provide your host's event ID...");
-			return;
-		}
-
-		var url = 'http://localhost:3000/listener/get_event?event_id=' + $('#event-id').val();
+		var url = 'http://localhost:3000/listener/get_event?event_id=' + $.cookies.get('event-id');
 		$.ajax({
 			dataType:	'json',
 			url :		url,
@@ -216,6 +213,7 @@ $().ready(function() {
 	});
 	joinForm.find(".btn").click(function() {
 		if ($(this).attr('id') == 'join-submit') {
+			$.cookies.set('event-id', $('#event-id').val());
 			shiftState(STATE.LISTENERPAGE);
 		} else {
 			shiftState(STATE.HOMEPAGE);
@@ -228,17 +226,17 @@ $().ready(function() {
 	$.each($.parseHTML('\
 		<div class="content-head row"> \
 			<h1 id="event-name"></h1>\
-			<h3 class="text-muted">at </h3><h3 id="event-loc"></h3>\
+			<h3 id="event-loc"><span class="text-muted">at </span></h3>\
 			<p id="event-desc"></p>\
 			<button type="button" class="btn btn-default pull-right" id="leave-event">Leave</button>\
 		</div>\
 		<div class="als-container" id="current-queue-container">\
-			<span class="als-prev"><img src="images/prev.png" alt="prev" title="previous" /></span>\
+			<span class="als-prev glyphicon glyphicon-chevron-left"></span>\
 			<div class="als-viewport">\
 				<ul class="als-wrapper" id="current-queue">\
 				</ul>\
 			</div>\
-			<span class="als-next"><img src="images/next.png" alt="next" title="next" /></span>\
+			<span class="als-prev glyphicon glyphicon-chevron-right"></span>\
 		</div>\
 		<div class="row">\
 			<div class="col-md-6">\
@@ -264,5 +262,5 @@ $().ready(function() {
 	});
 
 	//set initial state...
-	updateState();
+	shiftState($.cookies.get('ui_state'));
 });
